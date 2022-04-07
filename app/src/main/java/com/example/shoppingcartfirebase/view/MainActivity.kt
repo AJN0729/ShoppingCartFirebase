@@ -9,17 +9,37 @@ import com.example.shoppingcartfirebase.model.MenuModel
 import com.example.shoppingcartfirebase.viewmodel.CartLoadListener
 import com.example.shoppingcartfirebase.viewmodel.MenuAdapter
 import com.example.shoppingcartfirebase.viewmodel.MenuLoadListener
+import com.example.shoppingcartfirebase.viewmodel.UpdateCart
 import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import kotlinx.android.synthetic.main.activity_main.*
+import org.greenrobot.eventbus.EventBus
+import org.greenrobot.eventbus.Subscribe
+import org.greenrobot.eventbus.ThreadMode
 
 class MainActivity : AppCompatActivity(), MenuLoadListener, CartLoadListener {
 
     lateinit var menuLoadListener: MenuLoadListener
     lateinit var cartLoadListener: CartLoadListener
+
+    override fun onStart() {
+        super.onStart()
+        EventBus.getDefault().register(this)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        EventBus.getDefault().unregister(this)
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN,sticky = true)
+
+    fun onUpdateCartEvent(event:UpdateCart) {
+        countCartFromFirebase()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,11 +56,16 @@ class MainActivity : AppCompatActivity(), MenuLoadListener, CartLoadListener {
             .child("UNIQUE_USER_ID")
             .addListenerForSingleValueEvent(object: ValueEventListener{
                 override fun onDataChange(snapshot: DataSnapshot) {
-                    TODO("Not yet implemented")
+                    for(cartSnapshot in snapshot.children) {
+                        val cartModel = cartSnapshot.getValue(CartModel::class.java)
+                        cartModel!!.key = cartSnapshot.key
+                        cartModels.add(cartModel)
+                    }
+                    cartLoadListener.onLoadCartSuccess(cartModels)
                 }
 
                 override fun onCancelled(error: DatabaseError) {
-                    TODO("Not yet implemented")
+                    cartLoadListener.onLoadCartFailed(error.message)
                 }
 
             })
