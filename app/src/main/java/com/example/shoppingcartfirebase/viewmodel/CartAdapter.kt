@@ -65,6 +65,7 @@ class CartAdapter (
                         .setMessage("Are you sure?")
                         .setNegativeButton("CANCEL") { dialog, _ -> dialog.dismiss()}
                         .setPositiveButton("DELETE") { dialog, _ ->
+
                     notifyItemRemoved(position)
                     FirebaseDatabase.getInstance()
                         .getReference("Cart")
